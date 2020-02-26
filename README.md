@@ -13,7 +13,10 @@ Individuals move from one compartment to the other. From the stage of recovered 
 ![SEIR Compartments](https://institutefordiseasemodeling.github.io/Documentation/general/_images/SEIR-SEIRS.png)
 (Image courtesy of the Institute for Disease Modeling)
 
-The module allows for simulations based on different parameter. Please read the Jupyter Notebook presentation. 
+
+The module allows for simulations based on different parameters. Running a simulation will result in a chart describing the curves of any of the S-E-I-R compartments, as in the following picture. A chart describing the effective reproductive number will be shown as well. Please read the included Jupyter Notebook for a more comprehensive description of the model. 
+
+![Model Output](https://github.com/NicoTambone68/SEIR-Model/blob/master/SEIR-demo.png)
 
 ## Requirements
 
