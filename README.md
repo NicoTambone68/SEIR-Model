@@ -14,7 +14,7 @@ Individuals move from one compartment to the other. From the stage of recovered 
 (Image courtesy of the Institute for Disease Modeling)
 
 
-The module allows for simulations based on different parameters. Running a simulation will result in a chart describing the curves of any of the S-E-I-R compartments, as in the following picture. A chart describing the effective reproductive number will be shown as well. Please read the included Jupyter Notebook for a more comprehensive description of the model. 
+The module allows for simulations based on different parameters set by the user. The model implements the second order Runge-Kutta algorithm for the numerical solution of differential equations. Running a simulation will result in a chart describing the curves of any of the S-E-I-R compartments, as in the following picture. A chart describing the effective reproductive number will be shown as well. Please read the included Jupyter Notebook for a more comprehensive description of the model. 
 
 ![Model Output](https://github.com/NicoTambone68/SEIR-Model/blob/master/SEIR-demo.png)
 
