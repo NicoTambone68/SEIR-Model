@@ -20,8 +20,8 @@ The module allows for simulations based on different parameters set by the user.
 
 ## Requirements
 
-* Python 3 with Numpy and Matplotlib are required to use the module SEIR.py
+* Python 3.7 with Numpy and Matplotlib are required to use the module SEIR.py
 * Jupyter Notebook is required to read the presentation SEIR.jpynb
 
-It is suggested to install Anaconda to get a fully functional environment.
+It is suggested to install [Anaconda (Python 3.7 version)](https://www.anaconda.com/distribution/) to get a fully functional environment.
 
