@@ -19,9 +19,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import numpy
 from math import sin, cos, log, ceil
-from matplotlib import pyplot
-from matplotlib import rcParams
-from matplotlib import dates as mdates
+from matplotlib import pyplot, rcParams, dates as mdates
+#from matplotlib import rcParams
+#from matplotlib import dates as mdates
 
 
 """
@@ -171,19 +171,25 @@ class SEIR_Model:
 class Simulation:
 
     def __init__(self, **kwargs):
-        self.sigma       = float(kwargs.get('sigma', 26))
-        self.beta        = float(kwargs.get('beta', 0.0063))
-        self.gamma       = float(kwargs.get('gamma', 33))
-        self.N           = int(kwargs.get('N', 10**5))
+        self.R0          = float(kwargs.get('R0', 2.1))
         self.S           = int(kwargs.get('S', 10**5))
-        self.I           = int(kwargs.get('I', 0))
         self.E           = int(kwargs.get('E', 50))
+        self.I           = int(kwargs.get('I', 0))
         self.R           = int(kwargs.get('R', 90978))
-        self.p           = float(kwargs.get('p', 0.95))
-        self.omega       = float(kwargs.get('omega', 0.0005))        
+        self.itime       = int(kwargs.get('days_incubation', 14))
+        self.rtime       = int(kwargs.get('days_recovery', 21))
+        self.etime       = int(kwargs.get('days_elapsed', 100))
+
+        self.sigma       = 1/self.itime
+        self.gamma       = 1/self.rtime
+        self.beta        = self.R0*self.gamma
+
+#        self.N           = int(kwargs.get('N', 10**5))
+#        self.p           = float(kwargs.get('p', 0.95))
+#        self.omega       = float(kwargs.get('omega', 0.0005))        
         self.dt          = float(kwargs.get('dt', 0.001))
         self.start       = int(kwargs.get('start', 0))
-        self.end         = int(kwargs.get('end', 100))
+        self.end         = int(kwargs.get('end', self.etime))
         self.rkutt_data_vector  = []
 
 
@@ -222,10 +228,10 @@ class Simulation:
         Plots the requested graphs
 
         """
-        # setting up the model for the simulation 
+        # setting up the model for the simulation , N=self.N, p=self.p
         m = SEIR_Model(sigma=self.sigma, beta=self.beta, gamma=self.gamma
-                                 , N=self.N, S=self.S, I=self.I, E=self.E, R=self.R
-                                 , p=self.p, dt=self.dt
+                                 , S=self.S, I=self.I, E=self.E, R=self.R
+                                 , dt=self.dt
                                  , start=self.start, end=self.end)
         
         m.run_simulation()
@@ -235,14 +241,15 @@ class Simulation:
         self.discretization_vector = m.discretization_vector
         
         self.repro_num_rkutt = m.repro_num_rkutt
-        
-        self.plot_simulation()
 
-
+        # Array for infected individuals requiring I.C.
+        self.infected_ic = numpy.apply_along_axis((lambda a : a * 0.1), 0, self.rkutt_data_vector[:, 2])
         
+
+""" Plot the charts    
     def plot_simulation(self):
-        """ Plot the charts
-        """
+
+ 
         
         fig, ax = pyplot.subplots(2, 1, figsize=(18.5, 18.5))
         #fig.set_size_inches(18.5, 10.5)
@@ -277,4 +284,157 @@ class Simulation:
         ax[1].grid(True)
         
         pyplot.show()
+"""
+
+
+class Plotter:
+    def __init__(self, **kwargs):
+        self.sim = (kwargs.get('Simulation'))
+        self.sim2 = (kwargs.get('Simulation_2'))
+
+
+    def get_parameters(self):
+        """ Return the current parameters for debug purpose
+        """
+        return ("SEIR params.: sigma %.4f; beta %.4f; gamma %.4f; S %i; E %i; I %i; R %i; dt %.4f;\n Method: 2nd order Runge-Kutta." % \
+                ( self.sim.sigma, self.sim.beta, self.sim.gamma, self.sim.S, self.sim.E, self.sim.I, self.sim.R, self.sim.dt ))
+
+    def get_parameters2(self):
+        """ Return the current parameters for debug purpose
+        """
+        return ("Days - SEIR params.(A): sigma %.4f; beta %.4f; gamma %.4f; S %i; E %i; I %i; R %i; dt %.4f;\n \
+                             (B): sigma %.4f; beta %.4f; gamma %.4f; S %i; E %i; I %i; R %i; dt %.4f;\n Method: 2nd order Runge-Kutta algorithm" % \
+                ( self.sim.sigma, self.sim.beta, self.sim.gamma, self.sim.S, self.sim.E, self.sim.I, self.sim.R, self.sim.dt, 
+                  self.sim2.sigma, self.sim2.beta, self.sim2.gamma, self.sim2.S, self.sim2.E, self.sim2.I, self.sim2.R, self.sim.dt ))
+
+
+    def plot(self):
+        #self.sim1.plot_simulation()
+        fig, ax = pyplot.subplots(2, 1, figsize=(18.5, 18.5))
+        #fig.set_size_inches(18.5, 10.5)
+        
+        # plot S
+        ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 0], 'm-', lw=1, label="Sensitive")
+        
+        # plot E
+        ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 1], 'b-', lw=1, label="Exposed")        
+        
+        # plot I
+        ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 2], 'r-', lw=2, label="Infected")
+        
+        
+        # plot R
+        ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 3], 'g-', lw=1, label="Recovered")
+
+        ax[0].legend(loc="best", fontsize=16)
+        
+        ax[0].set_xlim(self.sim.start, self.sim.end)
+        ax[0].set_ylabel('Population', fontsize=16)
+        ax[0].set_xlabel('Days\n'+ self.sim.get_parameters(), fontsize=16)
+                
+        ax[0].grid(True)
+        
+        # Plot the reproduction number
+        ax[1].plot(self.sim.discretization_vector, self.sim.repro_num_rkutt, 'b-', lw=2, label="Effective Reproduction Number R(t)")
+        ax[1].set_xlim(self.sim.start, self.sim.end)
+        ax[1].set_ylabel('Effective Reproduction Number R(t)', fontsize=16)
+        ax[1].set_xlabel('Days', fontsize=16)
+        ax[1].legend(loc="best", fontsize=16)
+        ax[1].grid(True)
+        
+        pyplot.show()
+
+
+    def plot_comparison_rt(self):
+        #self.sim1.plot_simulation()
+        fig, ax = pyplot.subplots(2, 1, figsize=(18.5, 18.5))
+        #fig.set_size_inches(18.5, 10.5)
+
+        ax[0].set_xlim(self.sim.start, self.sim.end)
+
+        # plot S
+        #ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 0], 'm-', lw=1, label="Sensitive")
+        
+        # plot E
+        ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 1], 'b-', lw=1, label="Exposed A")        
+
+        # plot E2
+        ax[0].plot(self.sim.discretization_vector, self.sim2.rkutt_data_vector[:, 1], 'b--', lw=1, label="Exposed B")                
+        
+        # plot I
+        ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 2], 'r-', lw=2, label="Infected A")
+        
+        # plot I2
+        ax[0].plot(self.sim.discretization_vector, self.sim2.rkutt_data_vector[:, 2], 'r--', lw=2, label="Infected B")
+
+        
+        ## delete me ax[0].hlines(20, self.sim.start, self.sim.end, colors='g', linestyles='solid', label='')
+
+        ax[0].hlines(20, ax[0].get_xlim()[0], ax[0].get_xlim()[1], colors="g",  linestyles='solid', zorder=100, label='IC Availability')
+
+        # plot R
+        #ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 3], 'g-', lw=1, label="Recovered")
+
+        # maxY1 = numpy.amax(self.sim.rkutt_data_vector[:, 2])
+        # maxY2 = numpy.amax(self.sim2.rkutt_data_vector[:, 2])
+
+        ax[0].legend(loc="best", fontsize=16)
+        
+
+        ax[0].set_ylabel('Population', fontsize=16)
+        # + self.get_parameters2()
+        ax[0].set_xlabel('Days\n', fontsize=16)
+                
+        ax[0].grid(True)
+
+        # Plot the reproduction number
+        ax[1].plot(self.sim.discretization_vector, self.sim.repro_num_rkutt, 'b-', lw=2, label="Effective Reproduction Number R(t) (A)")
+        ax[1].plot(self.sim.discretization_vector, self.sim2.repro_num_rkutt, 'b--', lw=2, label="Effective Reproduction Number R(t) (B)")        
+        ax[1].set_xlim(self.sim.start, self.sim.end)
+        ax[1].set_ylabel('Effective Reproduction Number R(t)', fontsize=16)
+        ax[1].set_xlabel('Days', fontsize=16)
+        ax[1].legend(loc="best", fontsize=16)
+        ax[1].grid(True)        
+
+        pyplot.show()        
+
+
+    def plot_comparison(self):
+        
+        fig, ax = pyplot.subplots(1, 1, figsize=(18.5, 10.5))
+
+        ax.set_xlim(self.sim.start, self.sim.end)
+
+        # plot S
+        #ax[0].plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 0], 'm-', lw=1, label="Sensitive")
+        
+        # plot E
+        ax.plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 1], 'b-', lw=1, label="Exposed A")        
+
+        # plot E2
+        ax.plot(self.sim.discretization_vector, self.sim2.rkutt_data_vector[:, 1], 'b--', lw=1, label="Exposed B")                
+        
+        # plot I
+        ax.plot(self.sim.discretization_vector, self.sim.rkutt_data_vector[:, 2], 'm-', lw=1, label="Infected A")
+
+        # plot I requiring I.C.
+        ax.plot(self.sim.discretization_vector, self.sim.infected_ic, 'r-', lw=2, label='Infected A requiring IC')
+        
+        # plot I2
+        ax.plot(self.sim.discretization_vector, self.sim2.rkutt_data_vector[:, 2], 'm--', lw=1, label="Infected B")
+        
+        # plot I2 requiring I.C.
+        ax.plot(self.sim.discretization_vector, self.sim2.infected_ic, 'r--', lw=2, label='Infected B requiring IC')
+        
+        ax.hlines(20, ax.get_xlim()[0], ax.get_xlim()[1], colors="lime",  linestyles='solid', zorder=100, label='IC Availability')
+
+        ax.legend(loc="best", fontsize=16)
+
+        ax.set_ylabel('Population', fontsize=16)
+        # + self.get_parameters2()
+        ax.set_xlabel(self.get_parameters2(), fontsize=16)
+                
+        ax.grid(True)
+
+        pyplot.show()  
 
